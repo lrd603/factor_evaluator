@@ -1,14 +1,21 @@
+import pandas as pd
+
 from evaluator.metrics import calculate_ic
 
 
-def main():
-    factor_values = [0.2, 0.5, 0.8, 1.1, 1.5]
-    future_returns = [0.01, 0.03, 0.04, 0.06, 0.08]
-
-    ic = calculate_ic(factor_values, future_returns)
-
-    print("Factor IC:", ic)
+# 读取因子数据
+data = pd.read_csv("data/factor_data.csv")
 
 
-if __name__ == "__main__":
-    main()
+print("读取的数据:")
+print(data)
+
+
+# 计算IC
+ic = calculate_ic(
+    data["factor"],
+    data["return"]
+)
+
+
+print("\nFactor IC:", ic)
