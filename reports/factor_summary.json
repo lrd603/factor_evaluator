@@ -1,0 +1,20 @@
+{
+    "factor_momentum": {
+        "IC Mean": 0.9809,
+        "ICIR": 144.0734,
+        "Rank IC Mean": 1.0,
+        "Long Short Return": 0.07,
+        "Sharpe Ratio": 55.5608,
+        "Max Drawdown": 0.0,
+        "Win Rate": 1.0
+    },
+    "factor_value": {
+        "IC Mean": 0.9818,
+        "ICIR": 58.1912,
+        "Rank IC Mean": 1.0,
+        "Long Short Return": 0.05,
+        "Sharpe Ratio": 39.6863,
+        "Max Drawdown": 0.0,
+        "Win Rate": 1.0
+    }
+}

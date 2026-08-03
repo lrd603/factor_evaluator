@@ -6,5 +6,8 @@
     "Top_Return_Mean": 0.05,
     "Bottom_Return_Mean": -0.02,
     "Long_Short_Return_Mean": 0.07,
+    "Sharpe_Ratio": 55.5608,
+    "Max_Drawdown": 0.0,
+    "Win_Rate": 1.0,
     "quality": "Strong"
 }
