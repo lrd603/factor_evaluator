@@ -5,7 +5,7 @@ from evaluator.metrics import (
     calculate_daily_rank_ic,
     calculate_icir
 )
-
+from evaluator.group_analysis import calculate_group_return
 from evaluator.report import generate_report
 
 
@@ -45,9 +45,25 @@ print("\nICIR:")
 print(icir)
 
 
+# 分组收益分析
+print("\nCalculating group return analysis...")
+top_return, bottom_return, long_short_return = calculate_group_return(data)
+
+print("\nTop Group Return:")
+print(top_return)
+
+print("\nBottom Group Return:")
+print(bottom_return)
+
+print("\nLong Short Return:")
+print(long_short_return)
+
 # 生成评价报告
 generate_report(
     daily_ic,
     daily_rank_ic,
-    icir
+    icir,
+    top_return,
+    bottom_return,
+    long_short_return
 )

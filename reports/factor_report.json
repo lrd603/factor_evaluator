@@ -3,5 +3,8 @@
     "IC_std": 0.0068,
     "ICIR": 144.0734,
     "Rank_IC_mean": 1.0,
+    "Top_Return_Mean": 0.05,
+    "Bottom_Return_Mean": -0.02,
+    "Long_Short_Return_Mean": 0.07,
     "quality": "Strong"
 }
