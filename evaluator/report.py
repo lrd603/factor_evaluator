@@ -1,6 +1,8 @@
 import json
 import os
 
+from evaluator.factor_score import rating_from_score
+
 
 def _quality_text(report_data):
     icir = float(report_data.get("ICIR", report_data.get("ICIR", 0.0)))
@@ -23,19 +25,84 @@ def generate_markdown_report(report_data=None, summary_data=None, output_path="r
     """
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
 
-    if report_data is None:
-        json_path = os.path.join(os.path.dirname(output_path), "factor_report.json")
-        if os.path.exists(json_path):
-            with open(json_path, "r", encoding="utf-8") as f:
-                report_data = json.load(f)
-
     if summary_data is None:
         summary_path = os.path.join(os.path.dirname(output_path), "factor_summary.json")
         if os.path.exists(summary_path):
             with open(summary_path, "r", encoding="utf-8") as f:
                 summary_data = json.load(f)
 
-    if report_data is not None:
+    if report_data is None and summary_data is None:
+        json_path = os.path.join(os.path.dirname(output_path), "factor_report.json")
+        if os.path.exists(json_path):
+            with open(json_path, "r", encoding="utf-8") as f:
+                report_data = json.load(f)
+
+    if summary_data is not None:
+        ranked_factors = sorted(
+            summary_data.items(),
+            key=lambda item: float(item[1].get("factor_score", 0.0)),
+            reverse=True,
+        )
+        summary_rows = []
+        for factor_name, values in summary_data.items():
+            summary_rows.append(
+                f"| {factor_name} | {values.get('IC Mean', 0.0)} | {values.get('ICIR', 0.0)} | {values.get('Rank IC Mean', 0.0)} | {values.get('Long Short Return', 0.0)} | {values.get('Sharpe Ratio', 0.0)} | {values.get('Max Drawdown', 0.0)} | {values.get('Win Rate', 0.0)} |"
+            )
+
+        quality_items = []
+        for factor_name, values in summary_data.items():
+            factor_quality = _quality_text(values)
+            quality_items.append(f"- {factor_name}: {factor_quality}")
+
+        ranking_lines = []
+        for idx, (factor_name, values) in enumerate(ranked_factors, start=1):
+            score = values.get("factor_score", 0.0)
+            ranking_lines.append(f"{idx}. {factor_name} Score {score}")
+
+        top_factor_name, top_values = ranked_factors[0] if ranked_factors else (None, {})
+        top_score = top_values.get("factor_score", 0.0)
+        top_rating = top_values.get("rating", rating_from_score(top_score))
+
+        lines = [
+            "# Factor Research Report",
+            "",
+            "## 1. Performance Summary",
+            "",
+            "| Factor | IC Mean | ICIR | Rank IC Mean | Long Short Return | Sharpe Ratio | Max Drawdown | Win Rate |",
+            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
+            *summary_rows,
+            "",
+            "## 2. Return Analysis",
+            "",
+            "The summary table above includes each factor's long-short return behavior and return quality metrics.",
+            "",
+            "## 3. Factor Quality",
+            "",
+            *quality_items,
+            "",
+            "## Factor Score",
+            "",
+            f"Final Score: {top_score}",
+            f"Rating: {top_rating}",
+            "",
+            "Score based on:",
+            "- ICIR",
+            "- Long Short Return",
+            "- Sharpe Ratio",
+            "- Win Rate",
+            "- Drawdown",
+            "",
+            "Factor Ranking:",
+            *ranking_lines,
+            "",
+            "## 4. Visualization",
+            "",
+            "![IC Curve](ic_curve.png)",
+            "",
+            "![Long Short Curve](long_short_curve.png)",
+            "",
+        ]
+    elif report_data is not None:
         metrics = {
             "IC Mean": report_data.get("IC_mean", report_data.get("IC Mean", 0.0)),
             "Rank IC Mean": report_data.get("Rank_IC_mean", report_data.get("Rank IC Mean", 0.0)),
@@ -47,6 +114,8 @@ def generate_markdown_report(report_data=None, summary_data=None, output_path="r
             "Bottom Group Return": report_data.get("Bottom_Return_Mean", report_data.get("Bottom Group Return", 0.0)),
             "Long Short Return": report_data.get("Long_Short_Return_Mean", report_data.get("Long Short Return", 0.0)),
         }
+        score = report_data.get("factor_score", report_data.get("Factor Score", 0.0))
+        rating = report_data.get("rating", rating_from_score(score))
         quality_text = _quality_text(report_data)
         lines = [
             "# Factor Research Report",
@@ -74,41 +143,17 @@ def generate_markdown_report(report_data=None, summary_data=None, output_path="r
             "",
             quality_text,
             "",
-            "## 4. Visualization",
+            "## Factor Score",
             "",
-            "![IC Curve](ic_curve.png)",
+            f"Final Score: {score}",
+            f"Rating: {rating}",
             "",
-            "![Long Short Curve](long_short_curve.png)",
-            "",
-        ]
-    elif summary_data is not None:
-        summary_rows = []
-        for factor_name, values in summary_data.items():
-            summary_rows.append(
-                f"| {factor_name} | {values.get('IC Mean', 0.0)} | {values.get('ICIR', 0.0)} | {values.get('Rank IC Mean', 0.0)} | {values.get('Long Short Return', 0.0)} | {values.get('Sharpe Ratio', 0.0)} | {values.get('Max Drawdown', 0.0)} | {values.get('Win Rate', 0.0)} |"
-            )
-
-        quality_items = []
-        for factor_name, values in summary_data.items():
-            factor_quality = _quality_text(values)
-            quality_items.append(f"- {factor_name}: {factor_quality}")
-
-        lines = [
-            "# Factor Research Report",
-            "",
-            "## 1. Performance Summary",
-            "",
-            "| Factor | IC Mean | ICIR | Rank IC Mean | Long Short Return | Sharpe Ratio | Max Drawdown | Win Rate |",
-            "| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |",
-            *summary_rows,
-            "",
-            "## 2. Return Analysis",
-            "",
-            "The summary table above includes each factor's long-short return behavior and return quality metrics.",
-            "",
-            "## 3. Factor Quality",
-            "",
-            *quality_items,
+            "Score based on:",
+            "- ICIR",
+            "- Long Short Return",
+            "- Sharpe Ratio",
+            "- Win Rate",
+            "- Drawdown",
             "",
             "## 4. Visualization",
             "",
@@ -163,6 +208,16 @@ def generate_report(
     else:
         quality = "Weak"
 
+    from evaluator.factor_score import calculate_factor_score
+
+    factor_score = calculate_factor_score({
+        "ICIR": float(icir),
+        "Long Short Return": float(long_short_return_mean),
+        "Sharpe Ratio": float(sharpe_ratio),
+        "Win Rate": float(win_rate),
+        "Max Drawdown": float(max_drawdown),
+    })
+
     report = {
         "IC_mean": round(float(ic_mean), 4),
         "IC_std": round(float(ic_std), 4),
@@ -174,6 +229,8 @@ def generate_report(
         "Sharpe_Ratio": round(float(sharpe_ratio), 4),
         "Max_Drawdown": round(float(max_drawdown), 4),
         "Win_Rate": round(float(win_rate), 4),
+        "factor_score": round(float(factor_score), 2),
+        "rating": rating_from_score(factor_score),
         "quality": quality
     }
 

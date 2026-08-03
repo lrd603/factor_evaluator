@@ -4,6 +4,7 @@ import os
 import pandas as pd
 
 from evaluator.factor_runner import run_factor_evaluation
+from evaluator.factor_score import evaluate_factor_scores
 from evaluator.metrics import (
     calculate_daily_ic,
     calculate_daily_rank_ic,
@@ -47,6 +48,21 @@ if "factor_name" in data.columns or "factor_value" in data.columns:
                 "Max Drawdown": round(float(row["Max Drawdown"]), 4),
                 "Win Rate": round(float(row["Win Rate"]), 4),
             }
+
+        score_summary = evaluate_factor_scores(summary_dict)
+        for factor_name, score_info in score_summary.items():
+            summary_dict[str(factor_name)]["factor_score"] = round(float(score_info["factor_score"]), 2)
+            summary_dict[str(factor_name)]["rating"] = score_info["rating"]
+
+        ranking = sorted(
+            score_summary.items(),
+            key=lambda item: item[1]["factor_score"],
+            reverse=True,
+        )
+
+        print("\nFactor Ranking:")
+        for idx, (factor_name, info) in enumerate(ranking, start=1):
+            print(f"{idx}. {factor_name} Score {info['factor_score']:.1f}")
 
         os.makedirs("reports", exist_ok=True)
         with open("reports/factor_summary.json", "w", encoding="utf-8") as f:

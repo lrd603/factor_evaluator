@@ -6,7 +6,9 @@
         "Long Short Return": 0.07,
         "Sharpe Ratio": 55.5608,
         "Max Drawdown": 0.0,
-        "Win Rate": 1.0
+        "Win Rate": 1.0,
+        "factor_score": 87.5,
+        "rating": "Good"
     },
     "factor_value": {
         "IC Mean": 0.9818,
@@ -15,6 +17,8 @@
         "Long Short Return": 0.05,
         "Sharpe Ratio": 39.6863,
         "Max Drawdown": 0.0,
-        "Win Rate": 1.0
+        "Win Rate": 1.0,
+        "factor_score": 82.5,
+        "rating": "Good"
     }
 }

@@ -2,26 +2,35 @@
 
 ## 1. Performance Summary
 
-| Metric | Value |
-| --- | ---: |
-| IC Mean | 0.9809 |
-| Rank IC Mean | 1.0 |
-| ICIR | 144.0734 |
-| Sharpe Ratio | 55.5608 |
-| Max Drawdown | 0.0 |
-| Win Rate | 1.0 |
+| Factor | IC Mean | ICIR | Rank IC Mean | Long Short Return | Sharpe Ratio | Max Drawdown | Win Rate |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| factor_momentum | 0.9809 | 144.0734 | 1.0 | 0.07 | 55.5608 | 0.0 | 1.0 |
+| factor_value | 0.9818 | 58.1912 | 1.0 | 0.05 | 39.6863 | 0.0 | 1.0 |
 
 ## 2. Return Analysis
 
-| Metric | Value |
-| --- | ---: |
-| Top Group Return | 0.05 |
-| Bottom Group Return | -0.02 |
-| Long Short Return | 0.07 |
+The summary table above includes each factor's long-short return behavior and return quality metrics.
 
 ## 3. Factor Quality
 
-Strong factor with positive predictive ability.
+- factor_momentum: Strong factor with positive predictive ability.
+- factor_value: Strong factor with positive predictive ability.
+
+## Factor Score
+
+Final Score: 87.5
+Rating: Good
+
+Score based on:
+- ICIR
+- Long Short Return
+- Sharpe Ratio
+- Win Rate
+- Drawdown
+
+Factor Ranking:
+1. factor_momentum Score 87.5
+2. factor_value Score 82.5
 
 ## 4. Visualization
 
