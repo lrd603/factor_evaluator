@@ -61,6 +61,40 @@ pip install -r requirements.txt
 python main.py
 ```
 
+## A-share market data
+
+Install dependencies and fetch one or more stocks with AkShare:
+
+```bash
+pip install -r requirements.txt
+python fetch_stock_data.py 600519 000001 300750 --start 2024-01-01 --end 2024-12-31
+```
+
+The command saves forward-adjusted daily data to `data/raw_stock_data.csv`.
+Use `--adjust none` for unadjusted data or `--adjust hfq` for backward-adjusted data.
+
+Generate momentum, volatility, and volume factors from the downloaded data:
+
+```bash
+python generate_factors.py
+```
+
+The evaluator-compatible long-format result is saved to
+`data/factor_data_generated.csv`.
+
+Run the complete raw-data-to-report workflow:
+
+```bash
+python main.py
+```
+
+When `data/raw_stock_data.csv` exists, factors are generated automatically.
+To keep using a prepared factor CSV, pass it explicitly:
+
+```bash
+python main.py --input data/factor_data_multi.csv
+```
+
 ## 输出结果
 
 项目运行后会在 `reports/` 目录下生成以下文件：

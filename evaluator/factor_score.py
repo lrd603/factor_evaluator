@@ -1,6 +1,10 @@
+import math
+
+
 def _safe_float(value, default=0.0):
     try:
-        return float(value)
+        result = float(value)
+        return result if math.isfinite(result) else default
     except (TypeError, ValueError):
         return default
 
@@ -42,11 +46,15 @@ def calculate_factor_score(metric_dict):
         0.0,
     )
 
-    icir_score = _clip(icir / 2.5, 0.0, 1.0)
-    long_short_score = _clip(long_short_return / 0.12, 0.0, 1.0)
-    sharpe_score = _clip(sharpe_ratio / 3.0, 0.0, 1.0)
-    win_rate_score = _clip(win_rate, 0.0, 1.0)
-    drawdown_score = _clip(1.0 - (max_drawdown / 0.3), 0.0, 1.0)
+    # The evaluator supplies mean daily long-short return. Factor direction is
+    # reversible, so predictive strength is scored by magnitude; drawdown is
+    # always interpreted as a loss regardless of its sign convention.
+    annualized_long_short = abs(long_short_return) * 252
+    icir_score = _clip(abs(icir) / 0.5, 0.0, 1.0)
+    long_short_score = _clip(annualized_long_short / 0.20, 0.0, 1.0)
+    sharpe_score = _clip(abs(sharpe_ratio) / 2.0, 0.0, 1.0)
+    win_rate_score = _clip(abs(win_rate - 0.5) / 0.15, 0.0, 1.0)
+    drawdown_score = _clip(1.0 - (abs(max_drawdown) / 0.3), 0.0, 1.0)
 
     total_score = (
         icir_score * 30
