@@ -43,6 +43,7 @@ from evaluator.metrics import calculate_daily_ic, calculate_daily_rank_ic, calcu
 from evaluator.performance import calculate_max_drawdown, calculate_sharpe, calculate_win_rate
 from evaluator.report import generate_markdown_report, generate_report
 from evaluator.visualization import plot_ic_curve, plot_long_short_curve
+from data.market_data import fetch_and_save_stock_data
 from factors.generator import generate_factor_data
 
 
@@ -54,6 +55,13 @@ LEGACY_SINGLE_FACTOR_PATH = Path("data/factor_data.csv")
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Run the factor evaluation workflow.")
+    parser.add_argument(
+        "--stocks",
+        nargs="+",
+        help="Download and evaluate six-digit A-share stock codes.",
+    )
+    parser.add_argument("--start", help="Market-data start date, e.g. 2023-01-01.")
+    parser.add_argument("--end", help="Market-data end date, e.g. 2024-12-31.")
     parser.add_argument(
         "--input",
         help="Use a prepared factor CSV and skip factor generation.",
@@ -194,7 +202,26 @@ def run_workflow(data_path: str | Path) -> None:
 
 
 def main() -> None:
-    args = build_parser().parse_args()
+    parser = build_parser()
+    args = parser.parse_args()
+    if args.stocks:
+        if args.input:
+            parser.error("--stocks cannot be combined with --input")
+        if not args.start or not args.end:
+            parser.error("--stocks requires both --start and --end")
+        print(
+            f"Fetching {len(args.stocks)} stock(s) from {args.start} to {args.end}..."
+        )
+        market_data = fetch_and_save_stock_data(
+            args.stocks,
+            start_date=args.start,
+            end_date=args.end,
+            output_path=args.raw,
+        )
+        print(f"Fetched {len(market_data)} market-data rows: {args.raw}")
+    elif args.start or args.end:
+        parser.error("--start and --end can only be used together with --stocks")
+
     data_path = prepare_factor_data(args.input, args.raw, args.generated)
     run_workflow(data_path)
 
