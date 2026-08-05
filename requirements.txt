@@ -2,3 +2,4 @@ pandas
 matplotlib
 akshare
 pytest
+streamlit
