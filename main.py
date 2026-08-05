@@ -45,6 +45,7 @@ from evaluator.report import generate_markdown_report, generate_report
 from evaluator.visualization import plot_ic_curve, plot_long_short_curve
 from data.market_data import fetch_and_save_stock_data
 from factors.generator import generate_factor_data
+from stock_evaluator import evaluate_stock
 
 
 RAW_DATA_PATH = Path("data/raw_stock_data.csv")
@@ -201,9 +202,29 @@ def run_workflow(data_path: str | Path) -> None:
         run_single_factor_workflow(data)
 
 
+def run_interactive_stock_workflow() -> None:
+    """Run the V2 single-stock experience when main.py has no arguments."""
+    stock_code = input("请输入股票代码: ").strip()
+    print(f"\n正在获取 {stock_code} 的行情并计算股票评分...")
+    scores = evaluate_stock(stock_code)
+    source = "AkShare" if scores["data_source"] == "akshare" else "Mock"
+    print("\nStock Score:")
+    print(f"Stock: {scores['stock']}")
+    print(f"Momentum Score: {scores['momentum_score']:.2f}")
+    print(f"Volatility Score: {scores['volatility_score']:.2f}")
+    print(f"Volume Score: {scores['volume_score']:.2f}")
+    print(f"Final Score: {scores['final_score']:.2f}")
+    print(f"Data Source: {source}")
+    print(f"Report: {scores['report_path']}")
+
+
 def main() -> None:
     parser = build_parser()
     args = parser.parse_args()
+    if len(sys.argv) == 1:
+        run_interactive_stock_workflow()
+        return
+
     if args.stocks:
         if args.input:
             parser.error("--stocks cannot be combined with --input")
