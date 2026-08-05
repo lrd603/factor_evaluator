@@ -25,7 +25,9 @@ def _mock_prices(periods=100):
 
 def test_mock_market_data_generates_scores(monkeypatch, tmp_path):
     monkeypatch.setattr("stock_evaluator.load_stock_data", lambda *args, **kwargs: _mock_prices())
-    result = evaluate_stock("600519", report_path=tmp_path / "stock_report.md")
+    result = evaluate_stock(
+        "600519", report_path=tmp_path / "stock_report.md", include_financial=False
+    )
 
     assert result["stock"] == "600519"
     assert result["data_source"] == "mock"
@@ -34,7 +36,9 @@ def test_mock_market_data_generates_scores(monkeypatch, tmp_path):
 
 def test_score_output_has_complete_fields(monkeypatch, tmp_path):
     monkeypatch.setattr("stock_evaluator.load_stock_data", lambda *args, **kwargs: _mock_prices())
-    result = evaluate_stock("600519", report_path=tmp_path / "stock_report.md")
+    result = evaluate_stock(
+        "600519", report_path=tmp_path / "stock_report.md", include_financial=False
+    )
 
     assert {
         "stock",

@@ -8,6 +8,9 @@ import pandas as pd
 
 from data_loader.stock_data import load_stock_data
 from factor_engine.factor_builder import build_factor_data
+from factor_engine.quality import calculate_quality_factor
+from factor_engine.value import calculate_value_factors
+from financial_loader.financial_data import load_financial_data
 
 
 SCORE_FIELDS = ["momentum_score", "volatility_score", "volume_score"]
@@ -15,6 +18,11 @@ ACTIVE_WEIGHTS = {
     "momentum_score": 0.40,
     "volatility_score": 0.20,
     "volume_score": 0.20,
+}
+MULTIFACTOR_WEIGHTS = {
+    "technical_score": 0.40,
+    "value_score": 0.30,
+    "quality_score": 0.30,
 }
 
 
@@ -88,13 +96,75 @@ def calculate_stock_scores(factor_data: pd.DataFrame, stock_code: str | None = N
     }
 
 
+def _series_latest_percentile(values: pd.Series) -> float:
+    numeric = pd.to_numeric(values, errors="coerce").dropna()
+    if numeric.empty:
+        raise ValueError("Financial factor has no valid values")
+    return float(numeric.rank(method="average", pct=True).iloc[-1] * 100)
+
+
+def calculate_multifactor_scores(
+    technical_factor_data: pd.DataFrame,
+    financial_data: pd.DataFrame,
+    stock_code: str | None = None,
+) -> dict:
+    """Combine V2 technical scoring with V3 value and quality scores."""
+    technical = calculate_stock_scores(technical_factor_data, stock_code)
+    code = technical["stock"]
+    financial = financial_data.copy()
+    if "stock" not in financial.columns:
+        financial["stock"] = code
+    financial = financial[financial["stock"].astype(str).str.zfill(6) == code]
+    if financial.empty:
+        raise ValueError(f"Financial data does not contain stock {code}")
+    financial["date"] = pd.to_datetime(financial["date"], errors="raise")
+    financial = financial.sort_values("date").reset_index(drop=True)
+    financial = calculate_value_factors(financial)
+    financial = calculate_quality_factor(financial)
+
+    value_score = (
+        _series_latest_percentile(financial["pe_factor"])
+        + _series_latest_percentile(financial["pb_factor"])
+    ) / 2
+    quality_score = _series_latest_percentile(financial["roe_factor"])
+    component_scores = {
+        "technical_score": technical["final_score"],
+        "value_score": value_score,
+        "quality_score": quality_score,
+    }
+    final_score = sum(
+        component_scores[name] * weight for name, weight in MULTIFACTOR_WEIGHTS.items()
+    )
+    return {
+        **technical,
+        **{name: round(value, 2) for name, value in component_scores.items()},
+        "final_score": round(final_score, 2),
+    }
+
+
 def generate_stock_report(
     scores: dict,
     data_source: str,
     output_path: str | Path = "reports/stock_report.md",
+    financial_data_source: str | None = None,
 ) -> Path:
     """Write the stock score summary as a Markdown report."""
     source_label = "AkShare" if data_source.lower() == "akshare" else "Mock"
+    if "technical_score" in scores:
+        score_section = f"""- Technical Score: {scores['technical_score']:.2f}
+- Value Score: {scores['value_score']:.2f}
+- Quality Score: {scores['quality_score']:.2f}"""
+    else:
+        score_section = f"""- Momentum Score: {scores['momentum_score']:.2f}
+- Volatility Score: {scores['volatility_score']:.2f}
+- Volume Score: {scores['volume_score']:.2f}"""
+    financial_source_label = (
+        "AkShare" if (financial_data_source or "").lower() == "akshare" else "Mock"
+    )
+    data_source_section = f"Market: {source_label}"
+    if financial_data_source is not None:
+        data_source_section += f"\n\nFinancial: {financial_source_label}"
+
     content = f"""# Stock Evaluation Report
 
 ## Stock Information
@@ -103,9 +173,7 @@ def generate_stock_report(
 
 ## Factor Scores
 
-- Momentum Score: {scores['momentum_score']:.2f}
-- Volatility Score: {scores['volatility_score']:.2f}
-- Volume Score: {scores['volume_score']:.2f}
+{score_section}
 
 ## Final Stock Score
 
@@ -113,7 +181,7 @@ def generate_stock_report(
 
 ## Data Source
 
-{source_label}
+{data_source_section}
 """
     destination = Path(output_path)
     destination.parent.mkdir(parents=True, exist_ok=True)
@@ -126,15 +194,26 @@ def evaluate_stock(
     start_date: str | None = None,
     end_date: str | None = None,
     report_path: str | Path = "reports/stock_report.md",
+    include_financial: bool = True,
 ) -> dict:
     """Load prices, build factors, score one stock, and generate its report."""
     prices = load_stock_data(stock_code, start_date=start_date, end_date=end_date)
     factor_data = build_factor_data(prices, stock_code=stock_code)
     if factor_data.empty:
         raise ValueError("Insufficient market history to calculate stock scores")
-    scores = calculate_stock_scores(factor_data, stock_code)
+    financial_source = None
+    if include_financial:
+        financial_data = load_financial_data(stock_code)
+        financial_source = financial_data.attrs.get("data_source", "mock")
+        scores = calculate_multifactor_scores(factor_data, financial_data, stock_code)
+    else:
+        scores = calculate_stock_scores(factor_data, stock_code)
     scores["data_source"] = prices.attrs.get("data_source", "mock")
+    if financial_source is not None:
+        scores["financial_data_source"] = financial_source
     scores["report_path"] = str(
-        generate_stock_report(scores, scores["data_source"], report_path)
+        generate_stock_report(
+            scores, scores["data_source"], report_path, financial_source
+        )
     )
     return scores

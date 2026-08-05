@@ -210,11 +210,15 @@ def run_interactive_stock_workflow() -> None:
     source = "AkShare" if scores["data_source"] == "akshare" else "Mock"
     print("\nStock Score:")
     print(f"Stock: {scores['stock']}")
-    print(f"Momentum Score: {scores['momentum_score']:.2f}")
-    print(f"Volatility Score: {scores['volatility_score']:.2f}")
-    print(f"Volume Score: {scores['volume_score']:.2f}")
+    print(f"Technical Score: {scores['technical_score']:.2f}")
+    print(f"Value Score: {scores['value_score']:.2f}")
+    print(f"Quality Score: {scores['quality_score']:.2f}")
     print(f"Final Score: {scores['final_score']:.2f}")
     print(f"Data Source: {source}")
+    financial_source = (
+        "AkShare" if scores["financial_data_source"] == "akshare" else "Mock"
+    )
+    print(f"Financial Data Source: {financial_source}")
     print(f"Report: {scores['report_path']}")
 
 
