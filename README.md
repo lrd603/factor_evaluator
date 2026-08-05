@@ -1,91 +1,129 @@
-# A股因子自动评价系统
+# Automated Quantitative Stock Scoring and Factor Research Platform
 
-一个面向量化研究与实习项目展示的端到端因子分析工具。输入 A 股代码和研究区间后，系统会自动获取真实行情、构造基础因子、计算未来收益、完成横截面因子评价，并输出结构化结果、研究报告和可视化图表。
+一个面向 A 股的自动化多因子研究、股票评分与历史回测平台。
 
-项目重点展示了一条可复用的量化研究流水线，而不只是单个指标的计算脚本：
+输入股票代码后，系统可以自动获取行情和财务数据，计算技术、价值与质量因子，生成 0–100 的股票综合评分，并输出 Markdown 研究报告。项目同时提供股票池回测、沪深300基准比较、交易成本建模和因子 IC 有效性分析。
+
+## 项目简介
+
+项目将量化研究中的主要步骤组织为一条可复用的自动化流程：
 
 ```text
-股票代码与日期区间
-        ↓
-AkShare A股日线行情
-        ↓
-因子构造与未来收益对齐
-        ↓
-IC / Rank IC / ICIR
-        ↓
-分组收益与多空组合
-        ↓
-Sharpe / 最大回撤 / 胜率
-        ↓
-因子评分、排名、报告与图表
+股票代码
+    ↓
+获取 A 股行情与财务数据
+    ↓
+计算技术、价值和质量因子
+    ↓
+标准化因子并生成股票评分
+    ↓
+股票池回测与沪深300基准比较
+    ↓
+输出股票评分、回测和因子研究报告
 ```
 
-## 项目背景
+当公开数据接口暂时不可用时，数据层支持确定性 Mock 数据回退，便于离线开发和测试。真实数据与 Mock 数据会在命令行和报告中明确标识。
 
-量化因子从提出到验证通常需要经过数据获取、数据清洗、因子构造、收益对齐、统计检验、组合回测和结果汇总等步骤。本项目将这些步骤组织为一个可以直接运行的研究流程，用于快速判断一个因子是否具备横截面选股能力。
+## 核心功能
 
-当前版本支持：
+### 1. 数据获取
 
-- 使用 AkShare 获取沪深 A 股历史日线，主接口不可用时自动切换备用接口；
-- 自动保留 `000001` 等股票代码的前导零；
-- 自动生成动量、波动率和成交量因子；
-- 计算未来 5 日收益，避免将当期收益作为预测目标；
-- 批量计算 IC、Rank IC、ICIR、分组收益和多空收益；
-- 计算 Sharpe Ratio、最大回撤和胜率；
-- 输出 0–100 因子质量评分和排名；
-- 生成 JSON、Markdown 研究报告和 PNG 图表；
-- 兼容原有单因子、多因子手工 CSV。
+- 通过 AkShare 获取 A 股历史 OHLCV 行情；
+- 支持腾讯和 Eastmoney 行情端点回退；
+- 获取历史 PE、PB 和 ROE 财务指标；
+- 自动识别沪深市场代码；
+- 真实接口不可用时支持 Mock fallback。
 
-## 整体架构
+### 2. 因子体系
+
+技术因子：
+
+- `momentum_20`：20 日动量；
+- `momentum_60`：60 日动量；
+- `volatility_20`：20 日收益波动率；
+- `volatility_60`：60 日收益波动率；
+- `volume_change_20`：成交量相对20日均量变化。
+
+价值因子：
+
+- PE / Earnings Yield；
+- PB / Book Yield。
+
+质量因子：
+
+- ROE。
+
+研究层支持对上述因子计算横截面 IC、Rank IC、ICIR，并按因子有效性生成排名报告。
+
+### 3. 股票评分
+
+多因子综合评分采用以下权重：
+
+| 评分维度 | 权重 | 主要因子 |
+|---|---:|---|
+| Technical | 40% | Momentum、Volatility、Volume |
+| Value | 30% | PE、PB |
+| Quality | 30% | ROE |
+
+各因子先进行历史标准化，再转换为 0–100 分。系统同时保留旧版纯技术评分接口，保证已有研究流程兼容。
+
+### 4. 股票池回测
+
+- 支持可配置的多股票池；
+- 默认股票池包含15只 A 股；
+- 默认每20个交易日调仓；
+- 默认选择评分最高的 Top 20%；
+- Long-Only 等权组合；
+- 预留 Long-Short 扩展接口；
+- 默认交易成本为成交金额的 0.1%；
+- 使用沪深300作为基准；
+- 输出 Strategy Return、Benchmark Return 和 Alpha；
+- 计算 Annual Return、Sharpe Ratio、Max Drawdown、Win Rate 和 Information Ratio。
+
+## 项目结构
 
 ```text
 factor_evaluator/
-├─ main.py                         # 完整流程入口与命令行参数
-├─ fetch_stock_data.py             # 独立行情下载命令
-├─ generate_factors.py             # 独立因子生成命令
-├─ data/
-│  ├─ market_data.py               # AkShare 数据源、字段标准化与备用接口
-│  ├─ raw_stock_data.csv           # 自动下载的 OHLCV 行情
-│  └─ factor_data_generated.csv    # 自动生成的评价长表
-├─ factors/
-│  └─ generator.py                 # 因子、未来收益和长表生成
-├─ evaluator/
-│  ├─ metrics.py                   # IC、Rank IC、ICIR
-│  ├─ group_analysis.py            # Top/Bottom 分组与多空收益
-│  ├─ performance.py               # Sharpe、最大回撤、胜率
-│  ├─ factor_runner.py             # 多因子批量调度
-│  ├─ factor_score.py              # 综合评分与评级
-│  ├─ report.py                    # JSON 与 Markdown 报告
-│  └─ visualization.py             # IC 与累计多空曲线
-├─ reports/                        # 自动生成的研究结果
-└─ tests/                          # 数据、因子和评分单元测试
+├── main.py                         # 交互式股票评分入口
+├── stock_evaluator.py              # V2/V3 股票评分流程
+├── data_loader/
+│   └── stock_data.py               # A股历史行情与 Mock fallback
+├── financial_loader/
+│   └── financial_data.py           # PE、PB、ROE 财务数据
+├── factor_engine/
+│   ├── factor_builder.py           # evaluator 标准长表构建
+│   ├── momentum.py                 # 20/60日动量
+│   ├── volatility.py               # 20/60日波动率
+│   ├── volume_factor.py            # 成交量因子
+│   ├── value.py                    # PE/PB 价值因子
+│   └── quality.py                  # ROE 质量因子
+├── factor_analysis/
+│   └── ic_analysis.py              # IC、Rank IC、ICIR与因子排名
+├── evaluator/                      # 原始因子评价系统
+│   ├── metrics.py
+│   ├── group_analysis.py
+│   ├── performance.py
+│   ├── factor_score.py
+│   ├── factor_runner.py
+│   ├── report.py
+│   └── visualization.py
+├── backtest/
+│   ├── engine.py                   # 回测引擎与沪深300基准
+│   ├── portfolio.py                # Top 20%组合构建
+│   ├── metrics.py                  # 回测风险收益指标
+│   └── configured.py               # 配置化股票池回测入口
+├── config/
+│   └── stock_pool.py               # 默认股票池配置
+├── data/                            # 示例及生成的数据
+├── reports/                         # Markdown、JSON和PNG研究结果
+└── tests/                           # 数据、因子、评分和回测测试
 ```
 
-模块之间通过标准 DataFrame/CSV 字段衔接，数据获取、因子生成和评价逻辑相互独立，便于继续增加行情源、股票池或新因子。
+## 使用方法
 
-## 因子定义
+### 安装依赖
 
-| 因子 | 定义 |
-|---|---|
-| `momentum` | `close / close.shift(20) - 1` |
-| `volatility` | 日收益率的 20 日滚动标准差 |
-| `volume_factor` | `volume / volume.rolling(20).mean() - 1` |
-
-评价目标为未来 5 日收益：
-
-```python
-future_return_5d = close.shift(-5) / close - 1
-```
-
-生成的评价数据采用长表格式：
-
-```text
-date, stock, factor_name, factor_value, return
-```
-
-## 安装
-
-推荐使用 Python 虚拟环境：
+建议使用 Python 虚拟环境：
 
 ```bash
 python -m venv .venv
@@ -105,109 +143,135 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-依赖包括 `pandas`、`matplotlib` 和 `akshare`。
-
-## 完整运行示例
-
-直接输入股票代码和研究区间：
-
-```bash
-python main.py --stocks 600519 000001 300750 --start 2023-01-01 --end 2024-12-31
-```
-
-该命令会依次执行：
-
-1. 下载三只股票的真实历史行情；
-2. 保存 `data/raw_stock_data.csv`；
-3. 生成三个因子和未来 5 日收益；
-4. 保存 `data/factor_data_generated.csv`；
-5. 调用现有 evaluator 完成全部评价；
-6. 输出因子排名、JSON 报告、Markdown 报告和图表。
-
-如果已经存在 `data/raw_stock_data.csv`，可以跳过下载并直接运行：
+### 运行股票评分
 
 ```bash
 python main.py
 ```
 
-继续使用手工准备的因子 CSV：
-
-```bash
-python main.py --input data/factor_data_multi.csv
-```
-
-单独执行某个阶段：
-
-```bash
-python fetch_stock_data.py 600519 000001 300750 --start 2023-01-01 --end 2024-12-31
-python generate_factors.py
-```
-
-## 输出结果
-
-完整流程会生成：
+根据提示输入股票代码：
 
 ```text
-data/raw_stock_data.csv
-data/factor_data_generated.csv
-reports/factor_summary.json
-reports/factor_research_report.md
-reports/ic_curve.png
-reports/long_short_curve.png
+请输入股票代码: 600519
 ```
 
-命令行排名示例：
+系统将自动完成：
+
+1. 获取历史行情；
+2. 获取 PE、PB 和 ROE；
+3. 计算技术、价值和质量因子；
+4. 生成多因子股票评分；
+5. 输出 `reports/stock_report.md`。
+
+### 运行股票池回测
+
+```python
+from backtest import create_configured_backtest
+
+engine = create_configured_backtest(
+    start_date="2025-01-01",
+    end_date="2026-08-04",
+)
+
+daily_returns = engine.run()
+engine.generate_report()
+print(engine.metrics)
+```
+
+默认股票池可在 `config/stock_pool.py` 中修改。回测报告输出到 `reports/backtest_report.md`。
+
+### 运行因子 IC 分析
+
+```python
+from factor_analysis import analyze_factor_ic, generate_ic_report
+
+analysis = analyze_factor_ic(factor_data)
+generate_ic_report(analysis)
+print(analysis)
+```
+
+输入数据使用标准长表格式：
 
 ```text
-Factor Ranking:
-1. volume_factor Score 51.9
-2. volatility Score 42.6
-3. momentum Score 32.3
+date, stock, factor_name, factor_value, return
 ```
 
-`factor_summary.json` 示例：
-
-```json
-{
-  "volume_factor": {
-    "IC Mean": -0.0751,
-    "ICIR": -0.1108,
-    "Rank IC Mean": -0.0902,
-    "Long Short Return": -0.003,
-    "Sharpe Ratio": -1.0734,
-    "Max Drawdown": -0.86,
-    "Win Rate": 0.4326,
-    "factor_score": 51.88,
-    "rating": "Weak"
-  }
-}
-```
-
-评分用于比较因子的统计强度和可用性。负向稳定因子可以反转方向使用，因此评分层会识别负向预测强度；原始 IC、收益和风险指标仍按实际方向展示。
-
-## 测试
+### 运行测试
 
 ```bash
-python -m unittest discover -s tests -v
+pytest -v
 ```
 
-测试覆盖：
+## 示例结果
 
-- 股票代码校验和前导零；
-- AkShare 字段映射和备用数据接口；
-- 多股票行情合并与 CSV 保存；
-- 三个因子及未来收益计算；
-- 评分边界、收益尺度和回撤方向。
+### Stock Score
 
-## 研究说明与可扩展方向
+以 `600519` 为例：
 
-当前示例股票池只有三只股票，主要用于演示完整工程流程。正式因子研究应扩大横截面股票池，并进一步考虑交易成本、停牌、涨跌停、复权口径、行业与市值中性化、幸存者偏差及历史成分股变化。
+```text
+Stock: 600519
+Technical Score: 59.71
+Value Score: 92.03
+Quality Score: 16.54
+Final Score: 56.46
+Data Source: AkShare
+Financial Data Source: AkShare
+```
 
-后续可以扩展：
+完整报告：`reports/stock_report.md`。
 
-- 沪深 300、中证 500 等动态股票池；
-- 价值、质量、流动性和基本面因子；
-- 去极值、标准化和行业中性化；
-- 多周期收益与因子衰减分析；
-- 换手率、交易成本和更完整的组合回测；
-- HTML 仪表盘或交互式研究报告。
+### Factor Score
+
+因子评价系统输出：
+
+```text
+IC Mean
+Rank IC Mean
+ICIR
+Group Return
+Long-Short Return
+Sharpe Ratio
+Max Drawdown
+Win Rate
+Factor Score
+```
+
+研究结果包括 `reports/factor_research_report.md`、`reports/factor_ic_report.md` 以及 IC 和多空收益曲线。
+
+### Backtest Report
+
+五股票示例回测结果：
+
+```text
+Stock Pool: 600519, 000001, 300750, 601318, 600036
+Strategy Return: 19.18%
+CSI 300 Benchmark Return: 22.39%
+Alpha: -3.22%
+Annual Return: 14.92%
+Sharpe Ratio: 0.7070
+Max Drawdown: -16.50%
+```
+
+这些结果仅用于展示研究流程，不构成投资建议。历史表现不代表未来收益。
+
+## 技术栈
+
+- Python
+- Pandas
+- NumPy
+- AkShare
+- Matplotlib
+- Pytest
+
+## 后续优化方向
+
+- Streamlit Dashboard；
+- 增加成长、现金流、估值变化和情绪因子；
+- 扩大股票池并支持指数成分股动态更新；
+- 增加行业和市值中性化；
+- 增加滑点、涨跌停、停牌和更精细的交易成本模型；
+- 增加滚动训练、样本外检验和因子衰减分析。
+
+## 免责声明
+
+本项目用于量化研究、工程实践和教学展示。项目输出不构成任何投资建议，使用者应自行评估数据质量、模型假设和市场风险。
