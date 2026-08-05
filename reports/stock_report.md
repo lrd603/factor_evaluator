@@ -6,14 +6,14 @@
 
 ## Factor Scores
 
-- Momentum Score: 10.43
-- Volatility Score: 17.54
-- Volume Score: 23.25
+- Momentum Score: 66.18
+- Volatility Score: 22.34
+- Volume Score: 84.13
 
 ## Final Stock Score
 
-**15.41 / 100**
+**59.71 / 100**
 
 ## Data Source
 
-Mock
+AkShare

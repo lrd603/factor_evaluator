@@ -19,7 +19,7 @@ class StockDataLoaderTests(unittest.TestCase):
                 "volume": [1200, 1000],
             }
         )
-        with patch("data_loader.stock_data.fetch_stock_history", return_value=raw):
+        with patch("data_loader.stock_data._fetch_akshare_history", return_value=raw):
             result = load_stock_data("600519", allow_mock=False)
 
         self.assertEqual(result.columns.tolist(), PRICE_COLUMNS)
@@ -27,7 +27,7 @@ class StockDataLoaderTests(unittest.TestCase):
         self.assertEqual(result.attrs["data_source"], "akshare")
 
     def test_mock_fallback_has_required_columns(self):
-        with patch("data_loader.stock_data.fetch_stock_history", side_effect=RuntimeError("offline")):
+        with patch("data_loader.stock_data._fetch_akshare_history", side_effect=RuntimeError("offline")):
             result = load_stock_data("600519", "2024-01-01", "2024-01-10")
 
         self.assertEqual(result.columns.tolist(), PRICE_COLUMNS)

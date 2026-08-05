@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 from datetime import date, datetime
 import hashlib
+import logging
 from typing import Literal
 
 import pandas as pd
@@ -13,6 +14,7 @@ from data.market_data import fetch_stock_history, normalize_stock_code
 
 
 PRICE_COLUMNS = ["date", "open", "high", "low", "close", "volume"]
+logger = logging.getLogger(__name__)
 
 
 def _timestamp(value: str | date | datetime | None, name: str) -> pd.Timestamp | None:
@@ -36,6 +38,49 @@ def _standardize(frame: pd.DataFrame) -> pd.DataFrame:
         result[column] = pd.to_numeric(result[column], errors="raise")
     result = result.drop_duplicates("date", keep="last").sort_values("date")
     return result.reset_index(drop=True)
+
+
+def _fetch_akshare_history(
+    stock_code: str,
+    start_date: pd.Timestamp | None,
+    end_date: pd.Timestamp | None,
+    adjust: str,
+    timeout: int,
+) -> pd.DataFrame:
+    """Fetch real data through AkShare, preferring its responsive Tencent source."""
+    try:
+        import akshare as ak
+    except ImportError as exc:
+        raise RuntimeError("AkShare is not installed") from exc
+
+    effective_end = end_date or pd.Timestamp.today().normalize()
+    # Two years is ample for 60-day factors and keeps interactive requests fast.
+    effective_start = start_date or (effective_end - pd.DateOffset(years=2))
+    market_prefix = "sh" if stock_code.startswith(("5", "6", "9")) else "sz"
+
+    tencent_error: Exception | None = None
+    try:
+        raw = ak.stock_zh_a_hist_tx(
+            symbol=f"{market_prefix}{stock_code}",
+            start_date=effective_start.strftime("%Y%m%d"),
+            end_date=effective_end.strftime("%Y%m%d"),
+            adjust=adjust,
+            timeout=timeout,
+        )
+        if raw is not None and not raw.empty:
+            return raw
+        tencent_error = ValueError("Tencent endpoint returned no rows")
+    except Exception as exc:  # AkShare can expose several request exception types.
+        tencent_error = exc
+
+    logger.warning("AkShare Tencent endpoint failed for %s: %s", stock_code, tencent_error)
+    try:
+        return fetch_stock_history(stock_code, start_date, end_date, adjust=adjust)
+    except Exception as eastmoney_error:
+        raise RuntimeError(
+            f"AkShare endpoints failed for {stock_code}; "
+            f"Tencent: {tencent_error}; Eastmoney: {eastmoney_error}"
+        ) from eastmoney_error
 
 
 def generate_mock_stock_data(
@@ -102,6 +147,7 @@ def load_stock_data(
     end_date: str | date | datetime | None = None,
     adjust: Literal["", "qfq", "hfq"] = "qfq",
     allow_mock: bool = True,
+    timeout: int = 20,
 ) -> pd.DataFrame:
     """Load one stock's daily OHLCV history.
 
@@ -114,20 +160,27 @@ def load_stock_data(
     end = _timestamp(end_date, "end_date")
     if start is not None and end is not None and start > end:
         raise ValueError("start_date must not be later than end_date")
+    if not isinstance(timeout, int) or timeout <= 0:
+        raise ValueError("timeout must be a positive integer")
 
     try:
-        raw = fetch_stock_history(code, start, end, adjust=adjust)
+        raw = _fetch_akshare_history(code, start, end, adjust, timeout)
         result = _standardize(raw)
         result.attrs["data_source"] = "akshare"
         result.attrs["stock_code"] = code
+        logger.info("Data Source: AkShare")
         return result
-    except (ImportError, RuntimeError, ValueError, ConnectionError):
+    except Exception as exc:
         if not allow_mock:
             raise
-        return generate_mock_stock_data(code, start, end)
+        logger.warning("Real market data unavailable for %s: %s", code, exc)
+        result = generate_mock_stock_data(code, start, end)
+        logger.info("Data Source: Mock")
+        return result
 
 
 def main() -> None:
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     parser = argparse.ArgumentParser(description="Load one A-share stock's OHLCV history.")
     parser.add_argument("stock", nargs="?", help="Six-digit stock code, e.g. 600519")
     parser.add_argument("--start", help="Start date, e.g. 2024-01-01")
@@ -138,7 +191,8 @@ def main() -> None:
     stock = args.stock or input("请输入股票代码: ").strip()
     data = load_stock_data(stock, args.start, args.end, allow_mock=not args.no_mock)
     print(f"Stock: {stock}")
-    print(f"Source: {data.attrs['data_source']}")
+    source = "AkShare" if data.attrs["data_source"] == "akshare" else "Mock"
+    print(f"Data Source: {source}")
     print(f"Rows: {len(data)}")
     print(data.tail().to_string(index=False))
 
