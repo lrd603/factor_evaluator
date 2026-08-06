@@ -12,11 +12,12 @@ from stock_evaluator import evaluate_stock
 
 try:
     import streamlit as st
-except ImportError:  # Pure helper functions remain testable before UI dependencies are installed.
+except ImportError:  # Pure helpers remain testable before UI dependencies are installed.
     st = None
 
 
-REPORTS_DIR = Path("reports")
+BASE_DIR = Path(__file__).resolve().parent
+REPORTS_DIR = BASE_DIR / "reports"
 STOCK_REPORT_PATH = REPORTS_DIR / "stock_report.md"
 BACKTEST_REPORT_PATH = REPORTS_DIR / "backtest_report.md"
 FACTOR_IC_REPORT_PATH = REPORTS_DIR / "factor_ic_report.md"
@@ -26,7 +27,7 @@ def validate_stock_code(stock_code: str) -> str:
     """Validate and normalize a six-digit A-share stock code."""
     code = str(stock_code).strip()
     if not re.fullmatch(r"\d{6}", code):
-        raise ValueError("股票代码必须是6位数字，例如 600519")
+        raise ValueError("股票代码必须是 6 位数字，例如 600519")
     return code
 
 
@@ -36,6 +37,11 @@ def run_stock_analysis(
 ) -> dict:
     """Run the existing stock evaluator through a UI-friendly function."""
     return evaluator(validate_stock_code(stock_code))
+
+
+def evaluate_stock_for_dashboard(stock_code: str) -> dict:
+    """Run the existing evaluator with a repository-relative report target."""
+    return evaluate_stock(stock_code, report_path=STOCK_REPORT_PATH)
 
 
 def load_markdown_report(path: str | Path) -> str:
@@ -94,10 +100,8 @@ def _render_score_section(scores: dict) -> None:
         {
             "Dimension": ["Technical", "Value", "Quality", "Final"],
             "Score": [
-                scores["technical_score"],
-                scores["value_score"],
-                scores["quality_score"],
-                scores["final_score"],
+                scores["technical_score"], scores["value_score"],
+                scores["quality_score"], scores["final_score"],
             ],
         }
     )
@@ -164,20 +168,23 @@ def main() -> None:
     """Render the Streamlit dashboard."""
     if st is None:
         raise RuntimeError("Streamlit is not installed. Run: pip install -r requirements.txt")
+    REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     st.set_page_config(
         page_title="Factor Evaluator",
-        page_icon="📈",
+        page_icon=":bar_chart:",
         layout="wide",
     )
     st.title("Automated Quantitative Stock Scoring Platform")
-    st.caption("A股多因子评分、因子研究与历史回测")
+    st.caption("A 股多因子评分、因子研究与历史回测")
 
     st.subheader("股票分析")
     stock_code = st.text_input("股票代码", value="600519", max_chars=6)
     if st.button("分析", type="primary", use_container_width=False):
         try:
             with st.spinner("正在获取行情和财务数据并计算多因子评分..."):
-                st.session_state["stock_scores"] = run_stock_analysis(stock_code)
+                st.session_state["stock_scores"] = run_stock_analysis(
+                    stock_code, evaluator=evaluate_stock_for_dashboard
+                )
             st.success(f"股票 {stock_code} 分析完成")
         except Exception as exc:
             st.error(f"分析失败：{exc}")
