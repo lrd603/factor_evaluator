@@ -1,0 +1,23 @@
+{
+  "stock_count": 200,
+  "requested_stock_count": 200,
+  "successful_stock_count": 200,
+  "failed_stock_count": 14,
+  "date_range": [
+    "2018-01-29",
+    "2025-12-24"
+  ],
+  "average_cross_section": 158.42335766423358,
+  "minimum_cross_section": 103,
+  "survivorship_bias_status": "LIMITATION_CURRENT_LIST_HISTORICAL_DELISTINGS_INCOMPLETE",
+  "listing_date_quality": "exact_if_after_research_start_otherwise_left_censored",
+  "delisting_date_quality": "unavailable",
+  "PIT_exposure_availability": false,
+  "PIT_fundamental_availability": false,
+  "mock_usage": false,
+  "invalid_price_rows_removed": 1,
+  "fallback_usage": [],
+  "sample_validity": "VALID_CROSS_SECTIONAL_RESEARCH",
+  "time_span_validity": "VALID_TIME_SPAN",
+  "formal_research_status": "FORMAL_EMPIRICAL_RESEARCH"
+}

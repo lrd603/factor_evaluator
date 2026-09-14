@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from pathlib import Path
+import logging
 
 import pandas as pd
 
@@ -11,9 +12,12 @@ from data_loader.stock_data import load_stock_data
 from factor_engine.factor_builder import build_factor_data
 from financial_loader.financial_data import load_financial_data
 from stock_evaluator import calculate_multifactor_scores
+from universe import HistoricalUniverseProvider, UniverseConfig, enforce_trade_constraints
 
 from .metrics import calculate_backtest_metrics
 from .portfolio import build_portfolio
+
+logger = logging.getLogger(__name__)
 
 
 def load_csi300_data(start_date: pd.Timestamp, end_date: pd.Timestamp) -> pd.DataFrame:
@@ -48,6 +52,9 @@ class BacktestEngine:
         market_loader: Callable = load_stock_data,
         financial_loader: Callable = load_financial_data,
         benchmark_loader: Callable = load_csi300_data,
+        universe_provider=None,
+        universe_mode: str = "dynamic",
+        universe_config: UniverseConfig | None = None,
     ) -> None:
         if not stocks:
             raise ValueError("stocks must not be empty")
@@ -67,6 +74,13 @@ class BacktestEngine:
         self.market_loader = market_loader
         self.financial_loader = financial_loader
         self.benchmark_loader = benchmark_loader
+        if universe_mode not in {"dynamic", "fixed"}:
+            raise ValueError("universe_mode must be 'dynamic' or 'fixed'")
+        self.universe_mode = universe_mode
+        self.universe_provider = universe_provider
+        self.universe_config = universe_config or UniverseConfig()
+        self.research_metadata = {"universe_mode": universe_mode, "warnings": []}
+        self._market_history = pd.DataFrame()
 
         self.metrics: dict[str, float] = {}
         self.score_history = pd.DataFrame(columns=["date", "stock", "score"])
@@ -77,6 +91,7 @@ class BacktestEngine:
 
     def _load_inputs(self) -> tuple[pd.DataFrame, dict[str, pd.DataFrame], dict[str, pd.DataFrame]]:
         close_series = []
+        market_frames = []
         factors: dict[str, pd.DataFrame] = {}
         financials: dict[str, pd.DataFrame] = {}
         for code in self.stocks:
@@ -88,10 +103,15 @@ class BacktestEngine:
             prices = prices.copy()
             prices["date"] = pd.to_datetime(prices["date"])
             prices = prices.sort_values("date")
+            prices["stock"] = code
+            market_frames.append(prices)
             close_series.append(prices.set_index("date")["close"].rename(code))
             factors[code] = build_factor_data(prices, stock_code=code)
             financials[code] = self.financial_loader(code)
         closes = pd.concat(close_series, axis=1).sort_index()
+        self._market_history = pd.concat(market_frames, ignore_index=True)
+        if self.universe_mode == "dynamic" and self.universe_provider is None:
+            self.universe_provider = HistoricalUniverseProvider(self._market_history, self.universe_config)
         closes = closes.loc[
             (closes.index >= self.start_date) & (closes.index <= self.end_date)
         ]
@@ -104,7 +124,19 @@ class BacktestEngine:
         financials: dict[str, pd.DataFrame],
     ) -> pd.Series:
         scores: dict[str, float] = {}
+        eligible = set(self.stocks)
+        if self.universe_mode == "dynamic":
+            eligible = set(self.universe_provider.get_universe(current_date))
+            if not eligible:
+                warning = "dynamic_universe_empty_insufficient_prelisting_history_fixed_candidate_fallback"
+                if warning not in self.research_metadata["warnings"]:
+                    logger.warning(warning); self.research_metadata["warnings"].append(warning)
+                eligible = set(self.stocks)
+        technical_frames = []
+        financial_frames = []
         for code in self.stocks:
+            if code not in eligible:
+                continue
             technical = factors[code].copy()
             technical_dates = pd.to_datetime(technical["date"])
             technical = technical.loc[technical_dates <= current_date]
@@ -113,8 +145,17 @@ class BacktestEngine:
             financial = financial.loc[financial_dates <= current_date]
             if technical.empty or financial.empty:
                 continue
+            technical_frames.append(technical)
+            financial_frames.append(financial.assign(stock=code))
+        if not technical_frames or not financial_frames:
+            return pd.Series(dtype=float, name="score")
+        technical_universe = pd.concat(technical_frames, ignore_index=True)
+        financial_universe = pd.concat(financial_frames, ignore_index=True)
+        for code in self.stocks:
             try:
-                result = calculate_multifactor_scores(technical, financial, code)
+                result = calculate_multifactor_scores(
+                    technical_universe, financial_universe, code
+                )
             except ValueError:
                 continue
             scores[code] = result["final_score"]
@@ -136,9 +177,11 @@ class BacktestEngine:
             if current_date in rebalance_set:
                 scores = self._scores_at_date(current_date, factors, financials)
                 if not scores.empty:
-                    current_weights = build_portfolio(
+                    target_weights = build_portfolio(
                         scores, top_fraction=self.top_fraction, mode=self.mode
                     )
+                    market_state = self._market_history[pd.to_datetime(self._market_history["date"]) == current_date]
+                    current_weights = enforce_trade_constraints(current_weights, target_weights, market_state)
                     score_rows.extend(
                         {"date": current_date, "stock": code, "score": score}
                         for code, score in scores.items()
@@ -198,6 +241,7 @@ class BacktestEngine:
 ## Portfolio Rules
 
 - Mode: Long-Only
+- Universe mode: {self.universe_mode}
 - Rebalance: Every {self.rebalance_period} trading days
 - Selection: Top {self.top_fraction:.0%}
 - Transaction cost: {self.transaction_cost:.2%} of traded notional

@@ -58,19 +58,21 @@ def _fetch_real_financial_data(code: str) -> pd.DataFrame:
     missing = required_roe_columns - set(roe_raw.columns)
     if missing:
         raise ValueError(f"AkShare ROE data is missing columns: {sorted(missing)}")
-    roe = roe_raw[["NOTICE_DATE", "ROEJQ"]].rename(
-        columns={"NOTICE_DATE": "date", "ROEJQ": "roe"}
+    roe_columns = ["NOTICE_DATE", "ROEJQ"] + (["REPORT_DATE"] if "REPORT_DATE" in roe_raw else [])
+    roe = roe_raw[roe_columns].rename(
+        columns={"NOTICE_DATE": "announcement_date", "REPORT_DATE": "report_period", "ROEJQ": "roe"}
     )
-    roe["date"] = pd.to_datetime(roe["date"], errors="coerce").astype(
+    roe["announcement_date"] = pd.to_datetime(roe["announcement_date"], errors="coerce").astype(
         "datetime64[ns]"
     )
     roe["roe"] = pd.to_numeric(roe["roe"], errors="coerce")
-    roe = roe.dropna().drop_duplicates("date", keep="last").sort_values("date")
+    roe = roe.dropna(subset=["announcement_date", "roe"]).drop_duplicates("announcement_date", keep="last").sort_values("announcement_date")
     if roe.empty:
         raise ValueError("AkShare returned no usable ROE observations")
 
     result = pd.merge_asof(
-        valuation.sort_values("date"), roe, on="date", direction="backward"
+        valuation.sort_values("date"), roe,
+        left_on="date", right_on="announcement_date", direction="backward"
     )
     result["stock"] = code
     for column in ["pe", "pb", "roe"]:
@@ -78,7 +80,12 @@ def _fetch_real_financial_data(code: str) -> pd.DataFrame:
     result = result.dropna(subset=["pe", "pb", "roe"])
     if result.empty:
         raise ValueError("Financial series have no overlapping observations")
-    return result[FINANCIAL_COLUMNS].reset_index(drop=True)
+    result["available_date"] = result["announcement_date"]
+    result["factor_date"] = result["date"]
+    result["point_in_time_available"] = True
+    result["data_quality"] = "announcement_date_asof"
+    extra = [column for column in ["report_period", "announcement_date", "available_date", "factor_date", "point_in_time_available", "data_quality"] if column in result]
+    return result[FINANCIAL_COLUMNS + extra].reset_index(drop=True)
 
 
 def generate_mock_financial_data(stock_code: str, periods: int = 252) -> pd.DataFrame:
@@ -93,6 +100,12 @@ def generate_mock_financial_data(stock_code: str, periods: int = 252) -> pd.Data
         roe = 8 + seed / 12 + 2 * math.sin(index / 63)
         rows.append([current_date, code, round(pe, 4), round(pb, 4), round(roe, 4)])
     result = pd.DataFrame(rows, columns=FINANCIAL_COLUMNS)
+    result["report_period"] = pd.NaT
+    result["announcement_date"] = pd.NaT
+    result["available_date"] = pd.NaT
+    result["factor_date"] = result["date"]
+    result["point_in_time_available"] = False
+    result["data_quality"] = "synthetic_no_announcement_date"
     result.attrs["data_source"] = "mock"
     return result
 

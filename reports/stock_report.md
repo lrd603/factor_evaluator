@@ -6,13 +6,13 @@
 
 ## Factor Scores
 
-- Technical Score: 59.71
-- Value Score: 92.03
-- Quality Score: 16.54
+- Technical Score: 62.86
+- Value Score: 95.15
+- Quality Score: 16.48
 
 ## Final Stock Score
 
-**56.46 / 100**
+**58.64 / 100**
 
 ## Data Source
 

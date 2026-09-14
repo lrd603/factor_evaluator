@@ -8,7 +8,9 @@ import pandas as pd
 
 
 RAW_COLUMNS = ["date", "stock", "open", "high", "low", "close", "volume"]
-OUTPUT_COLUMNS = ["date", "stock", "factor_name", "factor_value", "return"]
+FORWARD_PERIODS = [1, 5, 10, 20, 40]
+FORWARD_COLUMNS = [f"forward_return_{period}d" for period in FORWARD_PERIODS]
+OUTPUT_COLUMNS = ["date", "stock", "factor_name", "factor_value", "return", *FORWARD_COLUMNS]
 FACTOR_COLUMNS = ["momentum", "volatility", "volume_factor"]
 
 
@@ -52,12 +54,14 @@ def calculate_factors(raw_data: pd.DataFrame) -> pd.DataFrame:
         stock_data["volume_factor"] = (
             stock_data["volume"] / stock_data["volume"].rolling(window=20, min_periods=20).mean() - 1
         )
-        stock_data["return"] = stock_data["close"].shift(-5) / stock_data["close"] - 1
+        for period in FORWARD_PERIODS:
+            stock_data[f"forward_return_{period}d"] = stock_data["close"].shift(-period) / stock_data["close"] - 1
+        stock_data["return"] = stock_data["forward_return_5d"]
         frames.append(stock_data)
 
     calculated = pd.concat(frames, ignore_index=True)
     long_data = calculated.melt(
-        id_vars=["date", "stock", "return"],
+        id_vars=["date", "stock", "return", *FORWARD_COLUMNS],
         value_vars=FACTOR_COLUMNS,
         var_name="factor_name",
         value_name="factor_value",
@@ -85,4 +89,3 @@ def generate_factor_data(
     destination.parent.mkdir(parents=True, exist_ok=True)
     factor_data.to_csv(destination, index=False, encoding="utf-8-sig")
     return factor_data
-

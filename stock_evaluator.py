@@ -6,6 +6,9 @@ from pathlib import Path
 
 import pandas as pd
 
+from config.factor_metadata import DEFAULT_NORMALIZATION_METHOD, apply_factor_directions
+from factor_combination.static_weight import combine_static_weight
+from factor_processing import preprocess_factors
 from data_loader.stock_data import load_stock_data
 from factor_engine.factor_builder import build_factor_data
 from factor_engine.quality import calculate_quality_factor
@@ -52,7 +55,12 @@ def _latest_percentile(
     return float(desirability.rank(method="average", pct=True).iloc[-1] * 100)
 
 
-def calculate_stock_scores(factor_data: pd.DataFrame, stock_code: str | None = None) -> dict:
+def calculate_stock_scores(
+    factor_data: pd.DataFrame,
+    stock_code: str | None = None,
+    normalization_method: str = DEFAULT_NORMALIZATION_METHOD,
+    combination_method: str = "static_weight",
+) -> dict:
     """Convert the latest normalized factor readings into a 0–100 stock score."""
     required = {"date", "stock", "factor_name", "factor_value", "return"}
     missing = required - set(factor_data.columns)
@@ -67,27 +75,35 @@ def calculate_stock_scores(factor_data: pd.DataFrame, stock_code: str | None = N
     if selected.empty:
         raise ValueError(f"Factor data does not contain stock {code}")
 
-    momentum_score = (
-        _latest_percentile(selected, "momentum_20")
-        + _latest_percentile(selected, "momentum_60")
-    ) / 2
-    volatility_score = (
-        _latest_percentile(selected, "volatility_20", higher_is_better=False)
-        + _latest_percentile(selected, "volatility_60", higher_is_better=False)
-    ) / 2
-    # A moderate expansion to roughly 1.2 times the 20-day mean is preferred;
-    # both unusually weak and abnormally large volume receive lower ranks.
-    volume_score = _latest_percentile(selected, "volume_change_20", target=1.2)
+    if normalization_method == "time_series_percentile":
+        momentum_score = (_latest_percentile(selected, "momentum_20") + _latest_percentile(selected, "momentum_60")) / 2
+        volatility_score = (_latest_percentile(selected, "volatility_20", higher_is_better=False) + _latest_percentile(selected, "volatility_60", higher_is_better=False)) / 2
+        volume_score = _latest_percentile(selected, "volume_change_20", target=1.2)
+    else:
+        latest_date = pd.to_datetime(factor_data["date"], errors="raise").max()
+        latest = factor_data.loc[pd.to_datetime(factor_data["date"]) == latest_date].copy()
+        processed = apply_factor_directions(preprocess_factors(latest, normalization_method))
+        if normalization_method == "cross_sectional_zscore":
+            processed["score_value"] = processed.groupby("factor_name")["normalized_value"].rank(pct=True) * 100
+        else:
+            processed["score_value"] = processed["normalized_value"]
+        target_rows = processed[processed["stock"].astype(str).str.zfill(6) == code]
+        lookup = target_rows.groupby("factor_name")["score_value"].mean()
+        momentum_score = float(lookup.reindex(["momentum_20", "momentum_60"]).mean())
+        volatility_score = float(lookup.reindex(["volatility_20", "volatility_60"]).mean())
+        volume_score = float(lookup.get("volume_change_20", float("nan")))
 
     component_scores = {
         "momentum_score": momentum_score,
         "volatility_score": volatility_score,
         "volume_score": volume_score,
     }
-    active_weight = sum(ACTIVE_WEIGHTS.values())
-    final_score = sum(
-        component_scores[name] * weight for name, weight in ACTIVE_WEIGHTS.items()
-    ) / active_weight
+    if combination_method == "equal_weight":
+        final_score = float(pd.Series(component_scores).mean())
+    elif combination_method == "static_weight":
+        final_score = float(combine_static_weight(pd.DataFrame([component_scores]), ACTIVE_WEIGHTS).iloc[0])
+    else:
+        raise ValueError("combination_method must be 'equal_weight' or 'static_weight'")
 
     return {
         "stock": code,
@@ -107,33 +123,48 @@ def calculate_multifactor_scores(
     technical_factor_data: pd.DataFrame,
     financial_data: pd.DataFrame,
     stock_code: str | None = None,
+    normalization_method: str = DEFAULT_NORMALIZATION_METHOD,
 ) -> dict:
     """Combine V2 technical scoring with V3 value and quality scores."""
-    technical = calculate_stock_scores(technical_factor_data, stock_code)
+    technical = calculate_stock_scores(
+        technical_factor_data, stock_code, normalization_method=normalization_method
+    )
     code = technical["stock"]
     financial = financial_data.copy()
     if "stock" not in financial.columns:
         financial["stock"] = code
-    financial = financial[financial["stock"].astype(str).str.zfill(6) == code]
-    if financial.empty:
+    if financial.empty or code not in set(financial["stock"].astype(str).str.zfill(6)):
         raise ValueError(f"Financial data does not contain stock {code}")
     financial["date"] = pd.to_datetime(financial["date"], errors="raise")
-    financial = financial.sort_values("date").reset_index(drop=True)
+    financial = financial.sort_values(["stock", "date"]).reset_index(drop=True)
     financial = calculate_value_factors(financial)
     financial = calculate_quality_factor(financial)
-
-    value_score = (
-        _series_latest_percentile(financial["pe_factor"])
-        + _series_latest_percentile(financial["pb_factor"])
-    ) / 2
-    quality_score = _series_latest_percentile(financial["roe_factor"])
+    if normalization_method == "time_series_percentile":
+        selected_financial = financial[financial["stock"].astype(str).str.zfill(6) == code]
+        value_score = (_series_latest_percentile(selected_financial["pe_factor"]) + _series_latest_percentile(selected_financial["pb_factor"])) / 2
+        quality_score = _series_latest_percentile(selected_financial["roe_factor"])
+    else:
+        latest = financial.groupby("stock", sort=False).tail(1).copy()
+        long = latest.melt(
+            id_vars=["stock"], value_vars=["pe_factor", "pb_factor", "roe_factor"],
+            var_name="factor_name", value_name="factor_value",
+        )
+        long["date"] = pd.to_datetime(technical_factor_data["date"]).max()
+        scored = apply_factor_directions(preprocess_factors(long, normalization_method))
+        if normalization_method == "cross_sectional_zscore":
+            scored["score_value"] = scored.groupby("factor_name")["normalized_value"].rank(pct=True) * 100
+        else:
+            scored["score_value"] = scored["normalized_value"]
+        target = scored[scored["stock"].astype(str).str.zfill(6) == code].set_index("factor_name")["score_value"]
+        value_score = float(target.reindex(["pe_factor", "pb_factor"]).mean())
+        quality_score = float(target.get("roe_factor", float("nan")))
     component_scores = {
         "technical_score": technical["final_score"],
         "value_score": value_score,
         "quality_score": quality_score,
     }
-    final_score = sum(
-        component_scores[name] * weight for name, weight in MULTIFACTOR_WEIGHTS.items()
+    final_score = float(
+        combine_static_weight(pd.DataFrame([component_scores]), MULTIFACTOR_WEIGHTS).iloc[0]
     )
     return {
         **technical,

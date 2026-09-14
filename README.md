@@ -275,3 +275,15 @@ Max Drawdown: -16.50%
 ## 免责声明
 
 本项目用于量化研究、工程实践和教学展示。项目输出不构成任何投资建议，使用者应自行评估数据质量、模型假设和市场风险。
+
+
+## Final Research Findings
+
+- Sample: 200 real A-shares, 2018–2025.
+- Low volatility: PREDICTIVE_AND_TRADABLE; momentum shows persistent reversal.
+- Final OOS model: Model_B with equal_weight.
+- Limitations: unresolved survivorship bias, no PIT market cap/neutralization, simplified execution and cost model.
+
+## Research Pipeline
+
+Data -> Universe -> Factors -> Cross-sectional processing -> IC/Rank IC -> Robustness -> Walk-forward -> Cost sensitivity -> Final model

@@ -1,0 +1,486 @@
+{
+  "pilot_status": "READY",
+  "start_date": "2024-01-01",
+  "end_date": "2025-12-31",
+  "requested_stock_count": 50,
+  "candidate_attempts": 70,
+  "successful_stock_count": 50,
+  "average_daily_cross_section": 49.15512465373961,
+  "sample": {
+    "status": "SMALL_SAMPLE_RESEARCH",
+    "median_cross_section_size": 49.0,
+    "minimum_cross_section_size": 47,
+    "quintile_available": true,
+    "ic_sample_sufficient": true
+  },
+  "real_market_data": true,
+  "financial_factors_included": false,
+  "neutralization_validated": false,
+  "walk_forward_real_pilot": "not_run_due_to_time",
+  "factor_names": [
+    "momentum_20",
+    "momentum_60",
+    "volatility_20",
+    "volatility_60",
+    "volume_change_20"
+  ],
+  "stock_list_source": "akshare_current_a_share_list",
+  "survivorship_bias_status": "partially_bias_reduced_current_list",
+  "download_metadata": [
+    {
+      "stock": "600901",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301395",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002859",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301018",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "000636",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603618",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "605369",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301378",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300905",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300948",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 480,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301596",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 402,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "600216",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "920748",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "688157",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "600217",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "688356",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "000718",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301331",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "600884",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603713",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300272",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301019",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002727",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300565",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "688459",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002416",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603936",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "605001",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300406",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300857",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "605100",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300220",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 484,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300011",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300504",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300726",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "600928",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603097",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603668",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002707",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "300033",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "601096",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002243",
+      "source": "akshare_tencent",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": "HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/stock/kline/get?fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5%2Cf6&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf116&ut=7eea3edcaed734bea9cbfc24409ed989&klt=101&fqt=1&secid=0.002243&beg=20240101&end=20251231 (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('Remote end closed connection without response')))"
+    },
+    {
+      "stock": "301099",
+      "source": "akshare_tencent",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": "HTTPSConnectionPool(host='push2his.eastmoney.com', port=443): Max retries exceeded with url: /api/qt/stock/kline/get?fields1=f1%2Cf2%2Cf3%2Cf4%2Cf5%2Cf6&fields2=f51%2Cf52%2Cf53%2Cf54%2Cf55%2Cf56%2Cf57%2Cf58%2Cf59%2Cf60%2Cf61%2Cf116&ut=7eea3edcaed734bea9cbfc24409ed989&klt=101&fqt=1&secid=0.301099&beg=20240101&end=20251231 (Caused by ProxyError('Unable to connect to proxy', RemoteDisconnected('Remote end closed connection without response')))"
+    },
+    {
+      "stock": "002430",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "600810",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "603395",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 269,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "605198",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "002520",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "301077",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    },
+    {
+      "stock": "605228",
+      "source": "akshare_eastmoney",
+      "is_real_data": true,
+      "cache_hit": false,
+      "rows": 485,
+      "fallback": null,
+      "primary_error": null
+    }
+  ],
+  "download_failures": {
+    "688835": "real endpoint returned no usable rows",
+    "001220": "real endpoint returned no usable rows"
+  },
+  "fallback_warnings": []
+}

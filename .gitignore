@@ -5,3 +5,11 @@ __pycache__/
 *.pyc
 
 .env
+
+# Local research caches and downloaded market data
+cache/
+
+# Pytest runtime caches and workspace-local basetemp directories
+.pytest_cache/
+.pytest_*/
+pytest-debug.log

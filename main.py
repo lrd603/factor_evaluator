@@ -46,6 +46,20 @@ from evaluator.visualization import plot_ic_curve, plot_long_short_curve
 from data.market_data import fetch_and_save_stock_data
 from factors.generator import generate_factor_data
 from stock_evaluator import evaluate_stock
+from config.factor_metadata import DEFAULT_NORMALIZATION_METHOD, apply_factor_directions
+from factor_analysis.reporting import (
+    generate_v2_report,
+    plot_correlation_heatmap,
+    plot_ic_decay,
+    plot_quantile_curves,
+)
+from factor_analysis.research import (
+    analyze_ic_decay,
+    average_factor_correlations,
+    calculate_quantile_returns,
+)
+from factor_processing import preprocess_factors
+from factor_analysis.v3 import run_v3_research
 
 
 RAW_DATA_PATH = Path("data/raw_stock_data.csv")
@@ -67,6 +81,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--input",
         help="Use a prepared factor CSV and skip factor generation.",
     )
+    parser.add_argument("--research-v3-real", action="store_true", help="Run the auditable V3.1 research pipeline from real/local cached inputs.")
+    parser.add_argument("--universe", choices=["ALL_A", "CSI300", "CSI500"], default="ALL_A")
+    parser.add_argument("--factors", nargs="+", help="Optional factor-name subset for research.")
     parser.add_argument("--raw", default=str(RAW_DATA_PATH), help="Raw market-data CSV.")
     parser.add_argument(
         "--generated",
@@ -165,7 +182,37 @@ def run_multi_factor_workflow(data: pd.DataFrame) -> None:
     representative_factor = ranking[0][0]
     _plot_representative_factor(data, representative_factor)
     generate_markdown_report(summary_data=summary_dict)
+    run_cross_sectional_research(data)
     print("Saved factor summary to reports/factor_summary.json")
+
+
+def run_cross_sectional_research(data: pd.DataFrame) -> Path:
+    """Generate V2 cross-sectional statistics while preserving legacy outputs."""
+    processed = apply_factor_directions(
+        preprocess_factors(data, normalization_method=DEFAULT_NORMALIZATION_METHOD)
+    )
+    processed["directed_value"] = processed["normalized_value"]
+    if "forward_return_5d" not in processed and "return" in processed:
+        processed["forward_return_5d"] = pd.to_numeric(processed["return"], errors="coerce")
+    periods = [period for period in [1, 5, 10, 20, 40] if f"forward_return_{period}d" in processed]
+    ic_summary = analyze_ic_decay(processed, periods=periods)
+    pearson, spearman, redundant = average_factor_correlations(processed)
+    plot_ic_decay(ic_summary, "reports/factor_ic_decay.png")
+    plot_correlation_heatmap(spearman, "reports/factor_correlation_heatmap.png")
+    quantile_means = {}
+    for factor, group in processed.groupby("factor_name", sort=True):
+        daily = calculate_quantile_returns(group, return_col="return")
+        quantile_means[str(factor)] = daily.mean()
+        safe_name = "".join(character if character.isalnum() or character in "-_" else "_" for character in str(factor))
+        plot_quantile_curves(daily, str(factor), f"reports/quantile_return_{safe_name}.png")
+    return generate_v2_report(
+        sorted(processed["factor_name"].astype(str).unique()),
+        ic_summary,
+        pd.DataFrame(quantile_means).T,
+        pearson,
+        spearman,
+        redundant,
+    )
 
 
 def run_single_factor_workflow(data: pd.DataFrame) -> None:
@@ -192,12 +239,23 @@ def run_single_factor_workflow(data: pd.DataFrame) -> None:
     plot_long_short_curve(long_short_return)
 
 
-def run_workflow(data_path: str | Path) -> None:
+def run_workflow(data_path: str | Path, factors: list[str] | None = None) -> None:
     print(f"Reading factor data: {data_path}")
     data = pd.read_csv(data_path, dtype={"stock": str})
+    if factors and "factor_name" in data:
+        data = data[data["factor_name"].isin(factors)].copy()
+        if data.empty:
+            raise ValueError("Requested factor set is absent from the input")
     print(f"Loaded {len(data)} rows.")
     if "factor_name" in data.columns or "factor_value" in data.columns:
         run_multi_factor_workflow(data)
+        if RAW_DATA_PATH.exists() and "forward_return_1d" in data.columns:
+            raw = pd.read_csv(RAW_DATA_PATH, dtype={"stock": str})
+            try:
+                result = run_v3_research(raw, data)
+                print(f"Saved V3 research report to {result['report']}")
+            except ValueError as exc:
+                print(f"V3 research skipped: {exc}")
     else:
         run_single_factor_workflow(data)
 
@@ -248,7 +306,9 @@ def main() -> None:
         parser.error("--start and --end can only be used together with --stocks")
 
     data_path = prepare_factor_data(args.input, args.raw, args.generated)
-    run_workflow(data_path)
+    if args.research_v3_real and args.universe != "ALL_A":
+        parser.error("CSI300/CSI500 require a true dated constituent file; current constituents will not be backfilled")
+    run_workflow(data_path, args.factors)
 
 
 if __name__ == "__main__":

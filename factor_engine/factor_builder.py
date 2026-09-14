@@ -19,7 +19,9 @@ FACTOR_COLUMNS = [
     "volatility_60",
     "volume_change_20",
 ]
-OUTPUT_COLUMNS = ["date", "stock", "factor_name", "factor_value", "return"]
+FORWARD_PERIODS = [1, 5, 10, 20, 40]
+FORWARD_COLUMNS = [f"forward_return_{period}d" for period in FORWARD_PERIODS]
+OUTPUT_COLUMNS = ["date", "stock", "factor_name", "factor_value", "return", *FORWARD_COLUMNS]
 
 
 def _normalize_stock_code(value: object) -> str:
@@ -67,10 +69,23 @@ def _calculate_one_stock(data: pd.DataFrame, forward_period: int) -> pd.DataFram
     calculated = calculate_momentum(data)
     calculated = calculate_volatility(calculated)
     calculated = calculate_volume_factor(calculated)
-    calculated["return"] = (
-        calculated["close"].shift(-forward_period) / calculated["close"] - 1
-    )
+    for period in FORWARD_PERIODS:
+        calculated[f"forward_return_{period}d"] = calculated["close"].shift(-period) / calculated["close"] - 1
+    calculated["return"] = calculated["close"].shift(-forward_period) / calculated["close"] - 1
     return calculated
+
+
+def calculate_forward_return(prices: pd.DataFrame, period: int = 5) -> pd.Series:
+    """Calculate close-to-future-close returns independently for each stock."""
+    if not isinstance(period, int) or period <= 0:
+        raise ValueError("period must be a positive integer")
+    required = {"stock", "close"}
+    missing = required - set(prices.columns)
+    if missing:
+        raise ValueError(f"Price data is missing columns: {sorted(missing)}")
+    close = pd.to_numeric(prices["close"], errors="coerce")
+    future = close.groupby(prices["stock"], sort=False).shift(-period)
+    return future / close - 1
 
 
 def build_factor_data(
@@ -89,7 +104,7 @@ def build_factor_data(
     ]
     calculated = pd.concat(frames, ignore_index=True)
     factor_data = calculated.melt(
-        id_vars=["date", "stock", "return"],
+        id_vars=["date", "stock", "return", *FORWARD_COLUMNS],
         value_vars=FACTOR_COLUMNS,
         var_name="factor_name",
         value_name="factor_value",

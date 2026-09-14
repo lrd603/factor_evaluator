@@ -1,0 +1,3 @@
+variant,model,weighting_method,OOS_return,annualized_return,volatility,Sharpe,max_drawdown,turnover,transaction_cost,benchmark_return,annualized_excess_return,information_ratio,tracking_error,beta,jensen_alpha,score,positive_excess_year_ratio,redundancy_penalty,qualitative_rating,status
+full_model,Model_B,equal_weight,1.0135092560716799,0.16405749482357224,0.19564829053767757,0.8750018091380715,-0.25568441310266854,105.03034425917372,0.10503034425917374,-0.07972928424756909,0.17356769536481823,0.6780411966967262,0.2559839965630458,0.06570451488318574,0.1713486621268355,4.666666666666667,0.8,0.0,STRONGEST,
+remove_volatility_20,,,,,,,,,,,,,,,,,,,,NOT_APPLICABLE_EMPTY_MODEL

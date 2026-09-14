@@ -1,0 +1,56 @@
+[
+  {
+    "field": "historical_market_cap",
+    "source": "none in V4 cache; AkShare daily price endpoint has no PIT shares outstanding",
+    "PIT_validity": false,
+    "historical_coverage": "none",
+    "missing_ratio": 1.0,
+    "quality_level": "UNAVAILABLE",
+    "usable_in_formal_research": false
+  },
+  {
+    "field": "historical_industry",
+    "source": "AkShare stock_industry_change_cninfo; reachable sample returned 15 dated records",
+    "PIT_validity": "change-dated records, but mixed classification standards and full-universe completeness not validated",
+    "historical_coverage": "single-security connectivity validated; 200-stock coverage not validated",
+    "missing_ratio": null,
+    "quality_level": "MEDIUM",
+    "usable_in_formal_research": false
+  },
+  {
+    "field": "exact_listing_date",
+    "source": "V4 observed first trade; exchange security-list endpoints candidate",
+    "PIT_validity": true,
+    "historical_coverage": "exact for post-2018 listings; left-censored otherwise",
+    "missing_ratio": 0.0,
+    "quality_level": "MEDIUM",
+    "usable_in_formal_research": true
+  },
+  {
+    "field": "delisting_date_and_master",
+    "source": "AkShare exchange endpoints; 159 SH and 208 SZ rows verified reachable",
+    "PIT_validity": true,
+    "historical_coverage": "official exchange-specific masters available; delisted-price join not validated",
+    "missing_ratio": null,
+    "quality_level": "MEDIUM",
+    "usable_in_formal_research": false
+  },
+  {
+    "field": "ST_status_history",
+    "source": "current names only; name-change endpoint is not a validated daily ST interval history",
+    "PIT_validity": false,
+    "historical_coverage": "none",
+    "missing_ratio": 1.0,
+    "quality_level": "UNAVAILABLE",
+    "usable_in_formal_research": false
+  },
+  {
+    "field": "historical_liquidity_ADV20",
+    "source": "cached real daily amount",
+    "PIT_validity": true,
+    "historical_coverage": "2018-2025 after 10-observation warmup",
+    "missing_ratio": null,
+    "quality_level": "HIGH",
+    "usable_in_formal_research": true
+  }
+]

@@ -1,0 +1,46 @@
+{
+  "universe": {
+    "universe_source": "input_history",
+    "point_in_time_universe": false,
+    "historical_constituents_available": false,
+    "survivorship_bias_status": "partially_bias_reduced_universe",
+    "warnings": [
+      "listing_date_inferred_from_first_observation"
+    ]
+  },
+  "fundamentals_point_in_time": "source_dependent; mock=false",
+  "industry_point_in_time": false,
+  "market_cap_point_in_time": false,
+  "trading_constraints": {
+    "warnings": [
+      "amount_approximated",
+      "st_history_unavailable",
+      "explicit_suspension_status_unavailable",
+      "limit_price_approximated",
+      "ipo_limit_rules_unavailable"
+    ],
+    "amount_source": "close_times_volume_proxy",
+    "st_point_in_time": false,
+    "suspension_source": "conservative_zero_volume_amount_and_missing_ohlc",
+    "limit_price_source": "board_rule_approximation",
+    "limit_execution_model": "one_price_bar_only"
+  },
+  "survivorship_bias_status": "partially_bias_reduced_universe",
+  "sample_size": {
+    "status": "ENGINEERING_SMOKE_TEST",
+    "median_cross_section_size": 3.0,
+    "minimum_cross_section_size": 3,
+    "quintile_available": false,
+    "ic_sample_sufficient": false
+  },
+  "fallback_warnings": [
+    "listing_date_inferred_from_first_observation",
+    "amount_approximated",
+    "st_history_unavailable",
+    "explicit_suspension_status_unavailable",
+    "limit_price_approximated",
+    "ipo_limit_rules_unavailable",
+    "market_cap_unavailable",
+    "industry_unavailable"
+  ]
+}
