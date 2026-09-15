@@ -1,0 +1,36 @@
+{
+  "security_master_total": 5550,
+  "security_master_exchange_coverage": ["SSE", "SZSE"],
+  "missing_exchange_coverage": ["BSE"],
+  "existed_during_2018_2025": 5400,
+  "currently_listed": 5217,
+  "delisted_during_period": 220,
+  "delisted_history_available": 220,
+  "delisted_history_unavailable": 0,
+  "delisted_historical_coverage_ratio": 1.0,
+  "yearly_average_universe_size": {
+    "2018": 119.95535714285714,
+    "2019": 127.14754098360656,
+    "2020": 131.36625514403292,
+    "2021": 150.40740740740742,
+    "2022": 166.28925619834712,
+    "2023": 176.3388429752066,
+    "2024": 182.9793388429752,
+    "2025": 185.23949579831933
+  },
+  "yearly_delisted_contribution_count": {
+    "2018": 12,
+    "2019": 12,
+    "2020": 9,
+    "2021": 10,
+    "2022": 9,
+    "2023": 9,
+    "2024": 7,
+    "2025": 3
+  },
+  "sample_rule": "SHA256(seed:stock_code) over all securities existing during 2018-2025; first 200 successful real histories from first 300 deterministic candidates",
+  "survivorship_status": "SURVIVORSHIP_BIAS_PARTIALLY_RESOLVED",
+  "remaining_bias": true,
+  "missing_delisted_histories": {},
+  "forward_return_policy": "NaN when future price is unavailable; no forward fill"
+}
